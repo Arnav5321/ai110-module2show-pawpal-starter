@@ -7,6 +7,25 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+The core classes would be: Pet, Owner, Task, Schedule, Scheduler.
+
+Pet
+    Attributes: name, species, age, dietary_restrictions
+    Responsibilities: Represent the pet being cared for
+Owner
+    Attributes: name, available_time_minutes, preferences
+    Responsibilities: Represent the owner and their constraints
+Task
+    Attributes: title, duration_minutes, priority (low/medium/high), category (walk/feeding/grooming/etc.)
+    Responsibilities: Represent a single pet care task
+Schedule
+    Attributes: tasks (list of Task), owner, pet, date
+    Methods: generate(), explain()
+    Responsibilities: Build an ordered daily plan and explain reasoning
+Scheduler (orchestrator)
+    Methods: schedule_day(owner, pet, available_tasks)
+    Responsibilities: Contains the core scheduling logic (sorting, filtering, fitting tasks into time)
+
 **b. Design changes**
 
 - Did your design change during implementation?
