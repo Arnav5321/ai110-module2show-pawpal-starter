@@ -4,7 +4,8 @@ Tests core functionality of Task and Pet classes.
 """
 
 import pytest
-from pawpal_system import Task, Pet, Owner
+from datetime import date, timedelta
+from pawpal_system import Task, Pet, Owner, Scheduler
 
 
 class TestTaskCompletion:
@@ -121,3 +122,82 @@ class TestTaskAddition:
         assert task1 in pet.get_tasks()
         assert task2 in pet.get_tasks()
         assert task3 in pet.get_tasks()
+
+
+class TestScheduler:
+    """Tests for scheduling utility methods."""
+
+    def test_sort_by_time_returns_chronological_order(self):
+        scheduler = Scheduler()
+        tasks = [
+            Task(title="Evening", duration_minutes=30, priority="low", category="play", frequency="daily", scheduled_time="19:00"),
+            Task(title="Morning", duration_minutes=20, priority="high", category="walk", frequency="daily", scheduled_time="07:30"),
+            Task(title="Noon", duration_minutes=15, priority="medium", category="feeding", frequency="daily", scheduled_time="12:00"),
+        ]
+
+        sorted_tasks = scheduler.sort_by_time(tasks)
+
+        assert [t.title for t in sorted_tasks] == ["Morning", "Noon", "Evening"]
+
+    def test_mark_task_complete_creates_next_daily_occurrence(self):
+        scheduler = Scheduler()
+        realistic_due_date = date.today()
+        pet = Pet(name="Max", species="Dog", age=3)
+
+        task = Task(
+            title="Morning Walk",
+            duration_minutes=30,
+            priority="high",
+            category="walk",
+            frequency="daily",
+            scheduled_time="07:30",
+            due_date=realistic_due_date,
+        )
+
+        pet.add_task(task)
+
+        next_task = scheduler.mark_task_complete(pet, task)
+
+        assert task.completed is True
+        assert next_task is not None
+        assert next_task.due_date == realistic_due_date + timedelta(days=1)
+        assert next_task.scheduled_time == "07:30"
+        assert next_task.completed is False
+        assert next_task in pet.get_tasks()
+
+    def test_detect_conflicts_reports_exact_time_matches(self):
+        scheduler = Scheduler()
+        owner = Owner(name="Sarah", available_time_minutes=180)
+        dog = Pet(name="Max", species="Dog", age=3)
+        cat = Pet(name="Whiskers", species="Cat", age=5)
+
+        task_dog = Task(
+            title="Morning Walk",
+            duration_minutes=30,
+            priority="high",
+            category="walk",
+            frequency="daily",
+            scheduled_time="08:00",
+            due_date=date.today(),
+        )
+        task_cat = Task(
+            title="Feeding",
+            duration_minutes=10,
+            priority="high",
+            category="feeding",
+            frequency="daily",
+            scheduled_time="08:00",
+            due_date=date.today(),
+        )
+
+        dog.add_task(task_dog)
+        cat.add_task(task_cat)
+        owner.add_pet(dog)
+        owner.add_pet(cat)
+
+        warnings = scheduler.detect_conflicts(owner)
+
+        assert len(warnings) == 1
+        assert "Conflict" in warnings[0]
+        assert "08:00" in warnings[0]
+

@@ -53,3 +53,21 @@ This project now includes enhanced scheduler features:
 
 These improvements improve usability while keeping the algorithm straightforward for a MVP scenario.
 
+## Testing PawPal+
+
+Run the full test suite with:
+
+```bash
+python -m pytest
+```
+
+Tests cover:
+
+- Task status transitions (complete/incomplete)
+- Sorting tasks by scheduled time
+- Recurrence behavior for daily tasks
+- Conflict detection for overlapping task slots
+- Pet/task data integration via Owner and Scheduler
+
+**Confidence Level:** (4/5 stars) - the key scheduling paths are validated, but boundary conditions (long-term plans, concurrent duration overlaps beyond exact time matches) can be expanded.
+
