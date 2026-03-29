@@ -3,7 +3,7 @@ Testing ground for PawPal+ System
 This script demonstrates creating an owner, pets, and tasks, then displays today's schedule.
 """
 
-from pawpal_system import Owner, Pet, Task
+from pawpal_system import Owner, Pet, Task, Scheduler
 
 
 def main():
@@ -39,7 +39,8 @@ def main():
         duration_minutes=30,
         priority="high",
         category="walk",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="07:30"
     )
     
     task2 = Task(
@@ -47,7 +48,8 @@ def main():
         duration_minutes=10,
         priority="high",
         category="feeding",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="08:00"
     )
     
     task3 = Task(
@@ -55,7 +57,8 @@ def main():
         duration_minutes=20,
         priority="medium",
         category="play",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="19:00"
     )
     
     dog.add_task(task1)
@@ -68,7 +71,8 @@ def main():
         duration_minutes=5,
         priority="high",
         category="grooming",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="09:00"
     )
     
     task5 = Task(
@@ -76,7 +80,8 @@ def main():
         duration_minutes=5,
         priority="high",
         category="feeding",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="08:30"
     )
     
     task6 = Task(
@@ -84,30 +89,82 @@ def main():
         duration_minutes=15,
         priority="medium",
         category="play",
-        frequency="daily"
+        frequency="daily",
+        scheduled_time="17:00"
+    )
+    
+    # Add intentional conflict tasks (same time) for conflict detection
+    task7 = Task(
+        title="Quick Checkup",
+        duration_minutes=10,
+        priority="medium",
+        category="grooming",
+        frequency="as-needed",
+        scheduled_time="08:00"
+    )
+    task8 = Task(
+        title="Extra Feeding",
+        duration_minutes=5,
+        priority="high",
+        category="feeding",
+        frequency="as-needed",
+        scheduled_time="08:00"
     )
     
     cat.add_task(task4)
     cat.add_task(task5)
     cat.add_task(task6)
+    dog.add_task(task7)
+    cat.add_task(task8)
     
-    # Print Today's Schedule
+    # Print Today's schedule
     print("=" * 50)
     print("TODAY'S SCHEDULE")
     print("=" * 50)
     print(f"\nOwner: {owner.name}")
     print(f"Available Time: {owner.available_time_minutes} minutes\n")
     
-    # Display tasks for each pet
     all_tasks = owner.get_all_tasks()
     total_duration = sum(task.duration_minutes for task in all_tasks)
     
-    for pet in owner.pets:
-        print(f"\n--- {pet.name.upper()} ({pet.species}) ---")
-        for task in pet.get_tasks():
-            status = "✓" if task.completed else "○"
-            print(f"{status} {task.title:<25} | {task.duration_minutes:>3} min | Priority: {task.priority}")
-    
+    # Initial unordered tasks (the order they were added)
+    print("\n--- TASKS IN ADDED ORDER ---")
+    for task in all_tasks:
+        status = "✓" if task.completed else "○"
+        print(f"{task.scheduled_time} {status} {task.title:<20} | {task.duration_minutes:>3} min | {task.priority}")
+
+    # Sort by scheduled_time via Scheduler.sort_by_time
+    scheduler = Scheduler()
+    tasks_sorted = scheduler.sort_by_time(all_tasks)
+    print("\n--- TASKS SORTED BY TIME ---")
+    for task in tasks_sorted:
+        status = "✓" if task.completed else "○"
+        print(f"{task.scheduled_time} {status} {task.title:<20} | {task.duration_minutes:>3} min | {task.priority}")
+
+    # Mark one recurring task complete and generate next occurrence
+    print("\n--- MARK TASK COMPLETE (RECURRING) ---")
+    recurring_next = scheduler.mark_task_complete(dog, task1)
+    if recurring_next:
+        print(f"Completed '{task1.title}' and added new occurrence for {recurring_next.due_date} at {recurring_next.scheduled_time}")
+
+    # Recompute all tasks and total duration after recurrence update
+    all_tasks = owner.get_all_tasks()
+    total_duration = sum(task.duration_minutes for task in all_tasks)
+
+    conflict_warnings = scheduler.detect_conflicts(owner)
+    print("\n--- CONFLICT DETECTION ---")
+    if conflict_warnings:
+        for warning in conflict_warnings:
+            print(warning)
+    else:
+        print("No conflicts detected.")
+
+    # Filter by pet name (Whiskers) and incomplete only
+    whiskers_tasks = scheduler.filter_tasks(owner, completed=False, pet_name="Whiskers")
+    print("\n--- INCOMPLETE TASKS FOR WHISKERS ---")
+    for task in whiskers_tasks:
+        print(f"{task.scheduled_time} {task.title:<20} | {task.duration_minutes:>3} min | {task.priority}")
+
     print(f"\n{'=' * 50}")
     print(f"Total Tasks: {len(all_tasks)}")
     print(f"Total Time Required: {total_duration} minutes")

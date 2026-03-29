@@ -31,6 +31,8 @@ Scheduler (orchestrator)
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
+It did change, and it's because having a Schedule and a Scheduler is redundant.
+
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
@@ -43,7 +45,9 @@ Scheduler (orchestrator)
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+  - Current conflict detection checks only exact `due_date` + `scheduled_time` matches (not interval overlaps), which is simpler and faster but can miss tasks that overlap by duration.
 - Why is that tradeoff reasonable for this scenario?
+  - For MVP scheduling, exact-time collisions are a lightweight guardrail that avoids complexity of full interval intersection logic, and it is easier to reason about in a small pet-care context.
 
 ---
 

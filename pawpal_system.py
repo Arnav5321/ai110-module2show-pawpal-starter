@@ -6,6 +6,7 @@ Uses dataclasses for clean, maintainable data models.
 """
 
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from typing import List, Optional
 
 
@@ -17,11 +18,31 @@ class Task:
     priority: str  # 'low', 'medium', 'high'
     category: str  # 'walk', 'feeding', 'grooming', etc.
     frequency: str  # 'daily', 'weekly', 'as-needed'
+    scheduled_time: str = "00:00"  # 'HH:MM' format for sorting
+    due_date: date = field(default_factory=date.today)
     completed: bool = False
     
-    def mark_completed(self) -> None:
-        """Mark the task as completed."""
+    def mark_completed(self) -> Optional['Task']:
+        """Mark the task as completed, and return the next occurrence for recurring tasks."""
         self.completed = True
+
+        if self.frequency == 'daily':
+            next_due_date = self.due_date + timedelta(days=1)
+        elif self.frequency == 'weekly':
+            next_due_date = self.due_date + timedelta(days=7)
+        else:
+            return None
+
+        return Task(
+            title=self.title,
+            duration_minutes=self.duration_minutes,
+            priority=self.priority,
+            category=self.category,
+            frequency=self.frequency,
+            scheduled_time=self.scheduled_time,
+            due_date=next_due_date,
+            completed=False,
+        )
     
     def mark_incomplete(self) -> None:
         """Mark the task as incomplete."""
@@ -153,3 +174,47 @@ class Scheduler:
         organized_tasks = self.organize_tasks(all_tasks, owner.available_time_minutes)
         
         return organized_tasks
+
+    def sort_by_time(self, tasks: List[Task]) -> List[Task]:
+        """Sort tasks by `scheduled_time` in HH:MM format."""
+        # Use sorted() with a lambda key for HH:MM strings
+        return sorted(tasks, key=lambda t: tuple(int(x) for x in t.scheduled_time.split(':')))
+
+    def mark_task_complete(self, pet: Pet, task: Task) -> Optional[Task]:
+        """Mark a task complete and create the next occurrence if recurring."""
+        next_task = task.mark_completed()
+        if next_task:
+            pet.add_task(next_task)
+        return next_task
+
+    def detect_conflicts(self, owner: Owner) -> List[str]:
+        """Lightweight conflict detection for overlapping scheduled task times."""
+        key_map = {}
+        warnings = []
+
+        for pet in owner.pets:
+            for task in pet.get_tasks():
+                key = (task.due_date, task.scheduled_time)
+                if key in key_map:
+                    existing_pet, existing_task = key_map[key]
+                    warning = (
+                        f"Conflict: {pet.name} ({task.title}) and "
+                        f"{existing_pet.name} ({existing_task.title}) both at {task.scheduled_time} on {task.due_date}"
+                    )
+                    warnings.append(warning)
+                else:
+                    key_map[key] = (pet, task)
+
+        return warnings
+
+    def filter_tasks(self, owner: Owner, completed: Optional[bool] = None, pet_name: Optional[str] = None) -> List[Task]:
+        """Filter owner's tasks by completion status and/or pet name."""
+        filtered_tasks = []
+        for pet in owner.pets:
+            if pet_name and pet.name != pet_name:
+                continue
+            for task in pet.tasks:
+                if completed is not None and task.completed != completed:
+                    continue
+                filtered_tasks.append(task)
+        return filtered_tasks
