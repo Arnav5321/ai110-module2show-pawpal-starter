@@ -46,12 +46,46 @@ pip install -r requirements.txt
 
 This project now includes enhanced scheduler features:
 
-- Recurring tasks: `Task.mark_completed()` can auto-create a new task for `daily` or `weekly` frequency using `datetime.timedelta` (1 day / 7 days).
-- Time-based sorting: `Scheduler.sort_by_time()` sorts `Task` entries by their `scheduled_time` in `HH:MM` format.
-- Filter API: `Scheduler.filter_tasks()` supports filtering by completion status and pet name.
-- Conflict detection: `Scheduler.detect_conflicts()` reports exact datetime-slot collisions for quick, lightweight warnings instead of exceptions.
+- **Recurring tasks**: `Task.mark_completed()` auto-creates a new task for `daily` or `weekly` frequency using `datetime.timedelta` (1 day / 7 days).
+- **Time-based sorting**: `Scheduler.sort_by_time()` sorts `Task` entries by their `scheduled_time` in `HH:MM` format via lambda key parsing.
+- **Filter API**: `Scheduler.filter_tasks()` supports filtering by completion status and pet name for flexible queries.
+- **Conflict detection**: `Scheduler.detect_conflicts()` reports exact datetime-slot collisions for lightweight warnings instead of exceptions.
+- **Priority-based scheduling**: `Scheduler.organize_tasks()` respects priority levels and available time constraints.
 
-These improvements improve usability while keeping the algorithm straightforward for a MVP scenario.
+These improvements make the scheduler production-ready while keeping algorithms straightforward for MVP scenarios.
+
+## Features
+
+- **Pet Management**: Add and manage multiple pets per owner with basic attributes (name, species, age).
+- **Task Creation**: Define pet care tasks with title, duration, priority (low/medium/high), category, and recurrence.
+- **Smart Scheduling**: Generate optimized daily plans that respect owner time constraints and task priorities.
+- **Time Visualization**: Tasks sorted chronologically by scheduled time for clarity.
+- **Conflict Warnings**: Real-time alerts when two tasks are scheduled at the same time.
+- **Recurring Tasks**: Automatically reschedule daily/weekly tasks after completion.
+- **Filtering & Search**: View tasks by pet or completion status.
+
+## Running the App
+
+### Interactive UI (Streamlit)
+
+```bash
+streamlit run app.py
+```
+
+Open your browser to `http://localhost:8501` and start managing your pet care schedule.
+
+### Command-line Demo
+
+```bash
+python main.py
+```
+
+### 📸 Demo 
+
+<a href="Demo_Screenshot.png" target="_blank"><img src='Demo_Screenshot.png' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>.
+
+
+Displays a sample schedule with sorting and filtering demonstrations.
 
 ## Testing PawPal+
 
@@ -65,9 +99,10 @@ Tests cover:
 
 - Task status transitions (complete/incomplete)
 - Sorting tasks by scheduled time
-- Recurrence behavior for daily tasks
+- Recurrence behavior for daily tasks (timedelta calculation)
 - Conflict detection for overlapping task slots
 - Pet/task data integration via Owner and Scheduler
 
-**Confidence Level:** (4/5 stars) - the key scheduling paths are validated, but boundary conditions (long-term plans, concurrent duration overlaps beyond exact time matches) can be expanded.
+**Confidence Level:** ★★★★☆ (4/5 stars) — key scheduling paths are validated, but edge cases (long-term plans, duration overlaps) can be further explored.
+
 

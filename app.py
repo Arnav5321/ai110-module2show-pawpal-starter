@@ -59,6 +59,9 @@ with col3:
 category = st.selectbox("Category", ["walk", "feeding", "grooming", "other"], index=0)
 frequency = st.selectbox("Frequency", ["daily", "weekly", "as-needed"], index=0)
 
+scheduled_time_input = st.time_input("Scheduled Time", value=None)
+scheduled_time = scheduled_time_input.strftime("%H:%M") if scheduled_time_input else "00:00"
+
 if st.button("Add task"):
     if selected_pet is None:
         st.warning("Add a pet first before adding tasks.")
@@ -69,24 +72,36 @@ if st.button("Add task"):
             priority=priority,
             category=category,
             frequency=frequency,
+            scheduled_time=scheduled_time,
         )
         selected_pet.add_task(new_task)
-        st.success(f"Added task '{new_task.title}' to {selected_pet.name}")
+        st.success(f"Added task '{new_task.title}' to {selected_pet.name} at {scheduled_time}")
 
 if st.session_state.owner.get_all_tasks():
     st.write("Current tasks across pets:")
+    scheduler = Scheduler()
+    all_tasks = st.session_state.owner.get_all_tasks()
+    
+    # Check for conflicts
+    conflicts = scheduler.detect_conflicts(st.session_state.owner)
+    if conflicts:
+        st.warning("**Task Conflicts Detected:**")
+        for conflict in conflicts:
+            st.write(f"  • {conflict}")
+    
+    # Sort and display tasks by scheduled time
+    sorted_tasks = scheduler.sort_by_time(all_tasks)
     st.table([
         {
-            "pet": p.name,
+            "pet": next(p.name for p in st.session_state.owner.pets if t in p.tasks),
+            "time": t.scheduled_time,
             "title": t.title,
             "duration": t.duration_minutes,
             "priority": t.priority,
             "category": t.category,
-            "frequency": t.frequency,
-            "completed": t.completed,
+            "completed": "✓" if t.completed else "○",
         }
-        for p in st.session_state.owner.pets
-        for t in p.tasks
+        for t in sorted_tasks
     ])
 else:
     st.info("No tasks yet. Add one above.")
@@ -102,13 +117,16 @@ if st.button("Generate schedule"):
     if not schedule:
         st.warning("No tasks can be scheduled. Add tasks or increase available time.")
     else:
-        st.write("Generated schedule:")
+        st.success("Schedule generated successfully!")
+        st.write("Generated schedule (sorted by time):")
+        sorted_schedule = scheduler.sort_by_time(schedule)
         st.table([
             {
                 "pet": next(p.name for p in st.session_state.owner.pets if t in p.tasks),
+                "time": t.scheduled_time,
                 "title": t.title,
                 "duration": t.duration_minutes,
                 "priority": t.priority,
             }
-            for t in schedule
+            for t in sorted_schedule
         ])
